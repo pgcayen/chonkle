@@ -1,6 +1,15 @@
 # CHONKLE
 A CLI version of https://squirdle.fireblend.com/
 
+## TODO
+- Main menu
+- High score
+- Environment variables
+    - Number of guesses
+    - Generation range
+- Scoring system
+- Figure out broken terminal
+
 ## Roadmap
 - [X] Basic CLI version of the game
 - [ ] CLI version stores results in PG
@@ -20,6 +29,7 @@ A CLI version of https://squirdle.fireblend.com/
     - Time limit mode
         - 30 seconds max for each guess
     - Random guesses to start
+    - When limiting generation range, block guesses from excluded gens
 - Initial random pokemon
 - Quick link to SMOGON
 - Quick link to Bulbapedia

@@ -11,4 +11,7 @@ const (
 )
 
 // print to clear terminal
-const Clear = "\033[H\033[2J"
+const (
+	Clear = "\033[H\033[2J"
+	Exit  = "exit"
+)

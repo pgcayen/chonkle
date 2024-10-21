@@ -11,8 +11,10 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+const RandomGuess = "random"
+
 func Chonkle(pokemon []Pokemon) {
-	var sugg []prompt.Suggest
+	sugg := []prompt.Suggest{{Text: cli.Exit}, {Text: RandomGuess}}
 	for i := range pokemon {
 		sugg = append(sugg, prompt.Suggest{Text: pokemon[i].Name})
 	}
@@ -29,29 +31,18 @@ func Chonkle(pokemon []Pokemon) {
 	guessCount := 0
 	res := "lost"
 
-	for guessCount < 8 {
+	for guessCount < 9 {
 		var guess Pokemon
 		for guess.Generation == 0 {
 			PrintTypingHintTable(target, guesses)
-
 			fmt.Println("Who's that pokemon?")
 			t := prompt.Input("> ", completer)
-
-			if t == "exit" {
-				os.Exit(0)
-			}
-
-			for i := range pokemon {
-				if pokemon[i].Name == t {
-					guess = pokemon[i]
-					break
-				}
-			}
+			guess = ValidateUserGuess(t, pokemon)
 		}
 
 		guesses = append(guesses, guess)
-
 		fmt.Print(cli.Clear)
+
 		table.SetBorder(false)
 		table.Append(BuildGuessResultRow(target, guess))
 		table.Render()
@@ -65,6 +56,26 @@ func Chonkle(pokemon []Pokemon) {
 	}
 
 	fmt.Printf("You %s! The secret Pokémon was %s!\n", res, target.Name)
+}
+
+func ValidateUserGuess(guessStr string, pokemon []Pokemon) Pokemon {
+	if guessStr == cli.Exit {
+		os.Exit(0)
+	}
+
+	if guessStr == RandomGuess {
+		return GetRandomPokemon(pokemon)
+	}
+
+	var guess Pokemon
+	for i := range pokemon {
+		if pokemon[i].Name == guessStr {
+			guess = pokemon[i]
+			break
+		}
+	}
+
+	return guess
 }
 
 func PrintTypingHintTable(target Pokemon, guesses []Pokemon) {
@@ -161,8 +172,4 @@ func GetNumberComparisonResult[T int | float64](l T, r T) string {
 	default:
 		return cli.Correct
 	}
-}
-
-func GetRandomPokemon(pokemon []Pokemon) Pokemon {
-	return pokemon[utils.RandInt(0, len(pokemon)-1)]
 }
