@@ -17,8 +17,7 @@ func main() {
 	rand.Seed(uint64(time.Now().UnixNano()))
 	var pokemon []Pokemon
 	json.Unmarshal(pokedexData, &pokemon)
-
-	Chonkle(pokemon)
+	MainMenu(pokemon)
 }
 
 /*

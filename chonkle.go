@@ -4,34 +4,103 @@ import (
 	"chonkle/cli"
 	"chonkle/utils"
 	"fmt"
+	"math"
 	"os"
 	"strconv"
 
 	prompt "github.com/c-bata/go-prompt"
+	env "github.com/caarlos0/env/v11"
+	"github.com/manifoldco/promptui"
 	"github.com/olekukonko/tablewriter"
 )
 
 const RandomGuess = "random"
 
-func Chonkle(pokemon []Pokemon) {
+type ChonkleOptions struct {
+	RandomGuessCount   int  `env:"RANDOM_GUESS_COUNT"`
+	MaxGuessCount      int  `env:"MAX_GUESS_COUNT"`
+	GenMin             int  `env:"GENERATION_MIN"`
+	GenMax             int  `env:"GENERATION_MAX"`
+	HideHeightCol      bool `env:"HIDE_HEIGHT_COLUMN"`
+	HideWeightCol      bool `env:"HIDE_WEIGHT_COLUMN"`
+	HideGenCol         bool `env:"HIDE_GENERATION_COLUMN"`
+	HideRemainingTypes bool `env:"HIDE_REMAINING_TYPES"`
+	HideSecondTypeCol  bool `env:"HIDE_SECOND_TYPE_COLUMN"`
+}
+
+// Main Menu Options
+const (
+	SingleMode    = "Single Mode"
+	PhlarcMode    = "Phlarc Special"
+	UnlimitedMode = "∞ unlimited mode"
+)
+
+func MainMenu(pokemon []Pokemon) {
+	var opts ChonkleOptions
+	utils.CheckError(env.Parse(&opts))
+
+	var err error
+	pokemon, err = GetPokemonFromGenerationRange(opts.GenMin, opts.GenMax, pokemon)
+	utils.CheckError(err)
+
+	prompt := promptui.Select{
+		Label: "Main Menu",
+		Items: []string{SingleMode, PhlarcMode, UnlimitedMode, cli.Exit},
+	}
+	_, result, err := prompt.Run()
+	utils.CheckError(err)
+
+	gameCount := 0
+	targetCount := 0
+
+	switch result {
+	case SingleMode:
+		targetCount = 1
+	case PhlarcMode:
+		targetCount = 3 // should auto random the first guess
+	case UnlimitedMode:
+		targetCount = math.MaxInt
+	default:
+		targetCount = -1
+	}
+
+	for gameCount < targetCount {
+		Chonkle(pokemon, opts)
+		gameCount++
+		cli.PressKeyToContinue()
+	}
+}
+
+func Chonkle(pokemon []Pokemon, opts ChonkleOptions) {
 	sugg := []prompt.Suggest{{Text: cli.Exit}, {Text: RandomGuess}}
 	for i := range pokemon {
 		sugg = append(sugg, prompt.Suggest{Text: pokemon[i].Name})
 	}
 
 	completer := func(d prompt.Document) []prompt.Suggest {
-		return prompt.FilterHasPrefix(sugg, d.GetWordBeforeCursor(), true)
+		return prompt.FilterFuzzy(sugg, d.Text, true)
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Gen", "Type 1", "Type 2", "Height", "Weight", ""})
+	table.SetBorder(false)
 
 	target := GetRandomPokemon(pokemon)
 	var guesses []Pokemon
 	guessCount := 0
 	res := "lost"
 
-	for guessCount < 9 {
+	for i := 0; i < int(opts.RandomGuessCount); i++ {
+		guess := GetRandomPokemon(pokemon)
+		table.Append(BuildGuessResultRow(target, guess))
+		guesses = append(guesses, guess)
+		guessCount++
+	}
+
+	fmt.Print(cli.Clear)
+	table.Render()
+
+	for guessCount < opts.MaxGuessCount {
 		var guess Pokemon
 		for guess.Generation == 0 {
 			PrintTypingHintTable(target, guesses)
@@ -43,7 +112,6 @@ func Chonkle(pokemon []Pokemon) {
 		guesses = append(guesses, guess)
 		fmt.Print(cli.Clear)
 
-		table.SetBorder(false)
 		table.Append(BuildGuessResultRow(target, guess))
 		table.Render()
 

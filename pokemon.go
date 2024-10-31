@@ -2,6 +2,7 @@ package main
 
 import (
 	"chonkle/utils"
+	"errors"
 	"fmt"
 	"strconv"
 )
@@ -34,4 +35,21 @@ func (p *Pokemon) SetDescription() {
 
 func GetRandomPokemon(pokemon []Pokemon) Pokemon {
 	return pokemon[utils.RandInt(0, len(pokemon)-1)]
+}
+
+func GetPokemonFromGenerationRange(minGen, maxGen int, pokemon []Pokemon) ([]Pokemon, error) {
+	if minGen > maxGen {
+		return nil, errors.New("minimum gen larger than max")
+	}
+
+	n := 0
+	for _, p := range pokemon {
+		if p.Generation >= minGen && p.Generation <= maxGen {
+			pokemon[n] = p
+			n++
+		}
+	}
+
+	pokemon = pokemon[:n]
+	return pokemon, nil
 }
